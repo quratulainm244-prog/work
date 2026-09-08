@@ -1,0 +1,102 @@
+:root {
+  --font-display:
+    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    Segoe UI Symbol, Noto Color Emoji;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* ====================================================================
+   KSM Studio 3D Cinematic Hero Animation Styles
+   ==================================================================== */
+
+@keyframes ksmHeroPopHorizontal {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) translateX(220px) rotateY(-28deg) rotateX(8deg) scale(0.8);
+    filter: blur(6px) brightness(0.7);
+  }
+  55% {
+    opacity: 1;
+    transform: perspective(1200px) translateX(-14px) rotateY(4deg) rotateX(-2deg) scale(1.035);
+    filter: blur(0px) brightness(1.12);
+  }
+  75% {
+    transform: perspective(1200px) translateX(6px) rotateY(-1.5deg) rotateX(1deg) scale(0.995);
+    filter: brightness(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) translateX(0) rotateY(0deg) rotateX(0deg) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes ksmHeroFloatingDepth {
+  0%, 100% {
+    transform: perspective(1200px) translateY(0px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(1200px) translateY(-9px) rotateX(1.8deg) rotateY(-1.4deg);
+  }
+}
+
+@keyframes ksmStudioAmbientGlow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes ksmStudioSheen {
+  0% {
+    transform: translateX(-160%) skewX(-25deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  35%, 100% {
+    transform: translateX(260%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+.ksm-hero-stage {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ksm-hero-card-pop {
+  animation: ksmHeroPopHorizontal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center right;
+  will-change: transform, opacity, filter;
+}
+
+.ksm-hero-card-float {
+  animation: ksmHeroFloatingDepth 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.ksm-studio-glow {
+  animation: ksmStudioAmbientGlow 5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.ksm-studio-sheen-sweep {
+  animation: ksmStudioSheen 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
