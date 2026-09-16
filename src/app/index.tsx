@@ -1,8 +1,19 @@
 import { AdmissionModal } from "@/components/AdmissionModal";
 import { HeroAnimation } from "@/components/HeroAnimation";
 import { SupabaseStatus } from "@/components/SupabaseStatus";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
+import {
+  fetchPrograms,
+  fetchGallery,
+  fetchTestimonials,
+  fetchSiteSettings,
+  ProgramItem,
+  GalleryItem,
+  TestimonialItem,
+  SiteSettingsState,
+  DEFAULT_SITE_SETTINGS,
+} from "@/lib/admin-api";
 import {
   Image,
   Linking,
@@ -14,6 +25,114 @@ import {
   useWindowDimensions,
 } from "react-native";
 
+const DEFAULT_PROGRAMS: ProgramItem[] = [
+  {
+    id: "default-1",
+    number: "01",
+    title: "Early Learning",
+    description: "Fun, creative and engaging learning experiences for young children.",
+    age_group: "2.5 - 4 Years",
+    icon: "🌱",
+    sort_order: 1,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-2",
+    number: "02",
+    title: "Primary Education",
+    description: "Building strong academic and personal foundations.",
+    age_group: "4 - 6 Years",
+    icon: "📚",
+    sort_order: 2,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-3",
+    number: "03",
+    title: "Student Development",
+    description: "Encouraging confidence, creativity and important life skills.",
+    age_group: "All Ages",
+    icon: "⭐",
+    sort_order: 3,
+    is_active: true,
+    created_at: "",
+  },
+];
+
+const DEFAULT_GALLERY: GalleryItem[] = [
+  {
+    id: "default-g-1",
+    title: "Learning Together",
+    image_url: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80",
+    category: "campus",
+    sort_order: 1,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-g-2",
+    title: "Young Learners",
+    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=80",
+    category: "activities",
+    sort_order: 2,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-g-3",
+    title: "Creative Activities",
+    image_url: "https://images.unsplash.com/photo-1560785496-3c9d27877182?auto=format&fit=crop&w=900&q=80",
+    category: "activities",
+    sort_order: 3,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-g-4",
+    title: "Classroom Life",
+    image_url: "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=900&q=80",
+    category: "campus",
+    sort_order: 4,
+    is_active: true,
+    created_at: "",
+  },
+];
+
+const DEFAULT_TESTIMONIALS: TestimonialItem[] = [
+  {
+    id: "default-t-1",
+    name: "KSM Parent",
+    relationship: "KSM Parent",
+    message: "A warm and caring environment where children can learn with confidence.",
+    rating: 5,
+    sort_order: 1,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-t-2",
+    name: "KSM Family",
+    relationship: "KSM Family",
+    message: "The focus on early development, activities and individual attention makes learning enjoyable.",
+    rating: 5,
+    sort_order: 2,
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: "default-t-3",
+    name: "KSM Parent",
+    relationship: "KSM Parent",
+    message: "A positive beginning for a child's educational journey.",
+    rating: 5,
+    sort_order: 3,
+    is_active: true,
+    created_at: "",
+  },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -24,6 +143,45 @@ export default function HomeScreen() {
   const isDesktop = windowWidth > 860;
   const isTablet = windowWidth <= 860 && windowWidth > 600;
   const isMobile = windowWidth <= 600;
+
+  // Live dynamic data state with sensible fallbacks
+  const [programs, setPrograms] = useState<ProgramItem[]>(DEFAULT_PROGRAMS);
+  const [gallery, setGallery] = useState<GalleryItem[]>(DEFAULT_GALLERY);
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>(DEFAULT_TESTIMONIALS);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingsState>(DEFAULT_SITE_SETTINGS);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLiveContent() {
+      try {
+        const [progs, gal, tests, settings] = await Promise.allSettled([
+          fetchPrograms(false),
+          fetchGallery(false),
+          fetchTestimonials(false),
+          fetchSiteSettings(),
+        ]);
+        if (!isMounted) return;
+        if (progs.status === "fulfilled" && progs.value?.length > 0) {
+          setPrograms(progs.value);
+        }
+        if (gal.status === "fulfilled" && gal.value?.length > 0) {
+          setGallery(gal.value);
+        }
+        if (tests.status === "fulfilled" && tests.value?.length > 0) {
+          setTestimonials(tests.value);
+        }
+        if (settings.status === "fulfilled" && settings.value) {
+          setSiteSettings(settings.value);
+        }
+      } catch (err) {
+        console.warn("Failed to load live data from Supabase:", err);
+      }
+    }
+    loadLiveContent();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
 
 
@@ -72,7 +230,7 @@ export default function HomeScreen() {
         {/* TOP BAR */}
         <View style={[styles.topBar, { paddingHorizontal: isDesktop ? 38 : 20 }]}>
           <Text style={styles.topBarText}>
-            Welcome to Kindergarten Saadia's Montessori School
+            Welcome to {siteSettings.branding?.fullName || "Kindergarten Saadia's Montessori School"}
           </Text>
 
           <SupabaseStatus />
@@ -92,11 +250,11 @@ export default function HomeScreen() {
 
             <View>
               <Text style={[styles.schoolName, { fontSize: isDesktop ? 27 : 20 }]}>
-                KINDERGARTEN SAADIA'S
+                {siteSettings.branding?.schoolName || "KINDERGARTEN SAADIA'S"}
               </Text>
 
               <Text style={styles.tagline}>
-                Learn • Grow • Succeed
+                {siteSettings.branding?.tagline || "Learn • Grow • Succeed"}
               </Text>
             </View>
           </View>
@@ -334,23 +492,14 @@ export default function HomeScreen() {
           </Text>
 
           <View style={[styles.programGrid, { flexDirection: isDesktop ? "row" : "column" }]} nativeID="programs-grid">
-            <ProgramCard
-              number="01"
-              title="Early Learning"
-              description="Fun, creative and engaging learning experiences for young children."
-            />
-
-            <ProgramCard
-              number="02"
-              title="Primary Education"
-              description="Building strong academic and personal foundations."
-            />
-
-            <ProgramCard
-              number="03"
-              title="Student Development"
-              description="Encouraging confidence, creativity and important life skills."
-            />
+            {programs.map((item, idx) => (
+              <ProgramCard
+                key={item.id || idx}
+                number={item.number || String(idx + 1).padStart(2, "0")}
+                title={item.title}
+                description={item.description}
+              />
+            ))}
           </View>
         </View>
 
@@ -444,22 +593,13 @@ export default function HomeScreen() {
           </Text>
 
           <View style={[styles.galleryGrid, { flexDirection: isDesktop ? "row" : "column" }]} nativeID="gallery-grid">
-            <GalleryCard
-              image="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80"
-              title="Learning Together"
-            />
-            <GalleryCard
-              image="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=80"
-              title="Young Learners"
-            />
-            <GalleryCard
-              image="https://images.unsplash.com/photo-1560785496-3c9d27877182?auto=format&fit=crop&w=900&q=80"
-              title="Creative Activities"
-            />
-            <GalleryCard
-              image="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=900&q=80"
-              title="Classroom Life"
-            />
+            {gallery.map((item, idx) => (
+              <GalleryCard
+                key={item.id || idx}
+                image={item.image_url}
+                title={item.title || "Learning Together"}
+              />
+            ))}
           </View>
 
           <Text style={styles.galleryNote}>
@@ -480,18 +620,13 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { fontSize: isDesktop ? 48 : 34, lineHeight: isDesktop ? 58 : 44 }]}>What Families Value</Text>
 
           <View style={[styles.testimonialGrid, { flexDirection: isDesktop ? "row" : "column" }]} nativeID="testimonials-grid">
-            <TestimonialCard
-              quote="A warm and caring environment where children can learn with confidence."
-              name="KSM Parent"
-            />
-            <TestimonialCard
-              quote="The focus on early development, activities and individual attention makes learning enjoyable."
-              name="KSM Family"
-            />
-            <TestimonialCard
-              quote="A positive beginning for a child's educational journey."
-              name="KSM Parent"
-            />
+            {testimonials.map((item, idx) => (
+              <TestimonialCard
+                key={item.id || idx}
+                quote={item.message}
+                name={item.name || "KSM Parent"}
+              />
+            ))}
           </View>
         </View>
 
@@ -516,23 +651,31 @@ export default function HomeScreen() {
             <View style={styles.contactCard}>
               <Text style={styles.contactIcon}>📍</Text>
               <Text style={styles.contactCardTitle}>Location</Text>
-              <Text style={styles.contactCardText}>Haripur, Khyber Pakhtunkhwa, Pakistan</Text>
+              <Text style={styles.contactCardText}>
+                {siteSettings.contact?.location || "Haripur, Khyber Pakhtunkhwa, Pakistan"}
+              </Text>
             </View>
 
             <View style={styles.contactCard}>
               <Text style={styles.contactIcon}>🎓</Text>
               <Text style={styles.contactCardTitle}>School Level</Text>
-              <Text style={styles.contactCardText}>Primary / Montessori education</Text>
+              <Text style={styles.contactCardText}>
+                {siteSettings.contact?.level || "Primary / Montessori education"}
+              </Text>
             </View>
 
             <View style={styles.contactCard}>
               <Text style={styles.contactIcon}>📱</Text>
               <Text style={styles.contactCardTitle}>Facebook</Text>
-              <Text style={styles.contactCardText}>Kindergarten Saadia's Montessori School</Text>
+              <Text style={styles.contactCardText}>
+                {siteSettings.contact?.facebookName || "Kindergarten Saadia's Montessori School"}
+              </Text>
               <Pressable
                 style={styles.facebookButton}
                 onPress={() =>
-                  Linking.openURL("https://www.facebook.com/Kindergarten786/")
+                  Linking.openURL(
+                    siteSettings.contact?.facebookUrl || "https://www.facebook.com/Kindergarten786/"
+                  )
                 }
               >
                 <Text style={styles.facebookButtonText}>Open Facebook Page</Text>
@@ -545,17 +688,17 @@ export default function HomeScreen() {
         <View style={[styles.footer, { flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center" }]} nativeID="footer">
           <View>
             <Text style={styles.footerTitle}>
-              KINDERGARTEN SAADIA'S
+              {siteSettings.branding?.schoolName || "KINDERGARTEN SAADIA'S"}
             </Text>
 
             <Text style={styles.footerTagline}>
-              Learn • Grow • Succeed
+              {siteSettings.branding?.tagline || "Learn • Grow • Succeed"}
             </Text>
           </View>
 
           <View style={[styles.footerRight, { alignItems: isMobile ? "flex-start" : "flex-end", marginTop: isMobile ? 25 : 0 }]}>
             <Text style={styles.footerCopyright}>
-              © 2026 Kindergarten Saadia's Montessori School
+              © 2026 {siteSettings.branding?.fullName || "Kindergarten Saadia's Montessori School"}
             </Text>
           </View>
         </View>

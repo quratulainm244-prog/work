@@ -361,13 +361,28 @@ export async function saveSiteSetting(key: keyof SiteSettingsState, value: any) 
 // ====================================================================
 
 export async function fetchAdmissions(): Promise<AdmissionInquiry[]> {
-  const { data, error } = await supabase
-    .from('inquiries')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data as AdmissionInquiry[];
+    if (error) throw error;
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      parent_name: item.parent_name || item.name || 'Parent',
+      contact_info: item.contact_info || item.phone || item.email || '',
+      child_name: item.child_name || null,
+      child_age: item.child_age || null,
+      message: item.message || item.notes || null,
+      status: item.status || 'new',
+      admin_notes: item.admin_notes || null,
+      created_at: item.created_at || new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.warn('Fallback fetching admissions:', err);
+    return [];
+  }
 }
 
 export async function updateAdmissionStatus(
@@ -400,13 +415,26 @@ export async function deleteAdmission(id: string) {
 // ====================================================================
 
 export async function fetchContactMessages(): Promise<ContactMessage[]> {
-  const { data, error } = await supabase
-    .from('contact_messages')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data as ContactMessage[];
+    if (error) throw error;
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      name: item.name || '',
+      email: item.email || null,
+      phone: item.phone || null,
+      message: item.message || '',
+      status: item.status || 'unread',
+      created_at: item.created_at || new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.warn('Fallback fetching contact messages:', err);
+    return [];
+  }
 }
 
 export async function updateMessageStatus(id: string, status: ContactMessage['status']) {
@@ -432,11 +460,31 @@ export async function deleteContactMessage(id: string) {
 // ====================================================================
 
 export async function fetchGallery(adminOnly: boolean = false): Promise<GalleryItem[]> {
-  let query = supabase.from('gallery').select('*').order('sort_order', { ascending: true });
-  if (!adminOnly) query = query.eq('is_active', true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as GalleryItem[];
+  try {
+    let query = supabase.from('gallery').select('*').order('sort_order', { ascending: true });
+    if (!adminOnly) query = query.eq('is_active', true);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as GalleryItem[];
+  } catch (err) {
+    console.warn('Fallback fetching gallery:', err);
+    try {
+      const { data, error } = await supabase.from('gallery').select('*');
+      if (error) throw error;
+      const items = (data || []).map((item: any, idx: number) => ({
+        id: item.id,
+        title: item.title || null,
+        image_url: item.image_url || '',
+        category: item.category || 'campus',
+        sort_order: item.sort_order ?? idx + 1,
+        is_active: item.is_active ?? true,
+        created_at: item.created_at || new Date().toISOString(),
+      }));
+      return adminOnly ? items : items.filter((i: any) => i.is_active);
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function createGalleryItem(item: Omit<GalleryItem, 'id' | 'created_at'>) {
@@ -465,11 +513,33 @@ export async function deleteGalleryItem(id: string, imageUrl?: string) {
 // ====================================================================
 
 export async function fetchPrograms(adminOnly: boolean = false): Promise<ProgramItem[]> {
-  let query = supabase.from('programs').select('*').order('sort_order', { ascending: true });
-  if (!adminOnly) query = query.eq('is_active', true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as ProgramItem[];
+  try {
+    let query = supabase.from('programs').select('*').order('sort_order', { ascending: true });
+    if (!adminOnly) query = query.eq('is_active', true);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as ProgramItem[];
+  } catch (err) {
+    console.warn('Fallback fetching programs:', err);
+    try {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      const items = (data || []).map((item: any, idx: number) => ({
+        id: item.id,
+        number: item.number || String(idx + 1).padStart(2, '0'),
+        title: item.title || '',
+        description: item.description || '',
+        age_group: item.age_group || null,
+        icon: item.icon || '🌟',
+        sort_order: item.sort_order ?? idx + 1,
+        is_active: item.is_active ?? true,
+        created_at: item.created_at || new Date().toISOString(),
+      }));
+      return adminOnly ? items : items.filter((i: any) => i.is_active);
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function createProgram(item: Omit<ProgramItem, 'id' | 'created_at'>) {
@@ -497,11 +567,34 @@ export async function deleteProgram(id: string) {
 // ====================================================================
 
 export async function fetchTeachers(adminOnly: boolean = false): Promise<TeacherItem[]> {
-  let query = supabase.from('teachers').select('*').order('sort_order', { ascending: true });
-  if (!adminOnly) query = query.eq('is_active', true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as TeacherItem[];
+  try {
+    let query = supabase.from('teachers').select('*').order('sort_order', { ascending: true });
+    if (!adminOnly) query = query.eq('is_active', true);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as TeacherItem[];
+  } catch (err) {
+    console.warn('Fallback fetching teachers:', err);
+    try {
+      const { data, error } = await supabase.from('teachers').select('*');
+      if (error) throw error;
+      const items = (data || []).map((item: any, idx: number) => ({
+        id: item.id,
+        name: item.name || '',
+        subject: item.subject || '',
+        phone: item.phone || null,
+        email: item.email || null,
+        photo_url: item.photo_url || null,
+        bio: item.bio || null,
+        sort_order: item.sort_order ?? idx + 1,
+        is_active: item.is_active ?? true,
+        created_at: item.created_at || new Date().toISOString(),
+      }));
+      return adminOnly ? items : items.filter((i: any) => i.is_active);
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function createTeacher(item: Omit<TeacherItem, 'id' | 'created_at'>) {
@@ -530,11 +623,32 @@ export async function deleteTeacher(id: string, photoUrl?: string | null) {
 // ====================================================================
 
 export async function fetchTestimonials(adminOnly: boolean = false): Promise<TestimonialItem[]> {
-  let query = supabase.from('testimonials').select('*').order('sort_order', { ascending: true });
-  if (!adminOnly) query = query.eq('is_active', true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as TestimonialItem[];
+  try {
+    let query = supabase.from('testimonials').select('*').order('sort_order', { ascending: true });
+    if (!adminOnly) query = query.eq('is_active', true);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as TestimonialItem[];
+  } catch (err) {
+    console.warn('Fallback fetching testimonials:', err);
+    try {
+      const { data, error } = await supabase.from('testimonials').select('*');
+      if (error) throw error;
+      const items = (data || []).map((item: any, idx: number) => ({
+        id: item.id,
+        name: item.name || '',
+        relationship: item.relationship || 'KSM Parent',
+        message: item.message || '',
+        rating: item.rating ?? 5,
+        sort_order: item.sort_order ?? idx + 1,
+        is_active: item.is_active ?? true,
+        created_at: item.created_at || new Date().toISOString(),
+      }));
+      return adminOnly ? items : items.filter((i: any) => i.is_active);
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function createTestimonial(item: Omit<TestimonialItem, 'id' | 'created_at'>) {
